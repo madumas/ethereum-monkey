@@ -13,6 +13,8 @@
   "dependencies": {
     "axios": "^0.19.2",
     "express": "^4.17.1",
-    "express-basic-auth": "^1.2.0"
+    "express-basic-auth": "^1.2.0",
+    "ethereum-tx-decoder": "^3.0.0",
+    "web3": "^1.2.9"
   }
 }

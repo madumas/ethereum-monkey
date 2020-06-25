@@ -1,8 +1,8 @@
-const fs = require('fs');
 const http = require('http');
-const https = require('https');
 const express = require('express');
 const axios = require('axios');
+const txDecoder = require('ethereum-tx-decoder');
+const web3 = require('web3');
 
 const app = express();
 
@@ -40,6 +40,12 @@ app.post('/', function (request, response, next)
       code: -32700,
       message: 'Parse error'
     });
+  }
+
+  if(rpc.method==='eth_sendRawTransaction') {
+    const decodedData =  txDecoder.decodeTx(rpc.params[0]);
+    console.log(decodedData);
+    console.log('expected tx hash: '+ web3.utils.keccak256(rpc.params[0]) );
   }
 
   axios.post(config.upstream, request.rpc).then((res) => {
