@@ -21,8 +21,34 @@ var argv = require('yargs')
         default: '8545',
         type: 'string'
     })
+    .option('txErrorRate', {
+        describe: 'randomly simulate a percentage of transactions being dropped',
+        default: 0.0,
+        type: 'number'
+    })
+    .option('minGas', {
+        describe: 'simulate dropping transactions under this gas price (GWEI)',
+        default: 0.0,
+        type: 'number'
+    })
+    .option('delay', {
+        describe: 'add this latency (milliseconds) to each request',
+        default: 0,
+        type: 'number'
+    })
+    .option('rpcErrorRate', {
+        describe: 'randomly return an error for a percentage of RPC requests',
+        default: 0.0,
+        type: 'number'
+    })
     .argv
 ;
+
+// validate commandline arguments
+console.assert(argv.txErrorRate >= 0 && argv.txErrorRate < 1, "Please specify txErrorRate between 0.0 and 1.0")
+console.assert(argv.minGas >= 0, "Please specify minGas greater than 0")
+console.assert(argv.delay >= 0, "Cannot simulate shorter-than-normal latencies")
+console.assert(argv.rpcErrorRate >= 0 && argv.rpcErrorRate < 1, "Please specify rpcErrorRate between 0.0 and 1.0")
 
 const app = express();
 
@@ -44,7 +70,7 @@ app.use((req, res, next) => {
 });
 
 http.createServer(app).listen(config.server.port, config.server.host);
-
+console.log("Waiting for connections on " + config.server.host + ":" + config.server.port)
 
 app.post('/', function (request, response, next)
 {
