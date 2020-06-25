@@ -44,20 +44,27 @@ app.post('/', function (request, response, next)
 
   if(rpc.method==='eth_sendRawTransaction') {
     const decodedData =  txDecoder.decodeTx(rpc.params[0]);
+    const txhash = web3.utils.keccak256(rpc.params[0])
     console.log(decodedData);
-    console.log('expected tx hash: '+ web3.utils.keccak256(rpc.params[0]) );
+
+    if(Math.floor(Math.random()*2)===0) {
+      //Drop 1 tx of 2
+      console.log('Dropped transaction ' + txhash)
+      response.status(200).send(JSON.stringify({
+        jsonrpc: '2.0',
+        result: web3.utils.keccak256(rpc.params[0])
+      }))
+      return;
+    }
   }
 
   axios.post(config.upstream, request.rpc).then((res) => {
     let responseData = res.data;
     response.status(res.status).send(responseData);
+    console.log('resp:'+JSON.stringify(responseData))
   }).catch(e => {
-    // no hook on errors
     console.log(e)
-    response.status(e.response.status).send(
-      //hookResponseData(request.rpc.method, e.response.data)
-      e.response.data
-    );
+    response.status(e.response.status).send(e.response.data);
   });
 });
 
