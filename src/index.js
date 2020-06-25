@@ -4,18 +4,37 @@ const axios = require('axios');
 const txDecoder = require('ethereum-tx-decoder');
 const web3 = require('web3');
 
+var argv = require('yargs')
+    .option('upstream', {
+        alias: 'u',
+        describe: 'HTTP URI for Ethereum node to which this service should proxy requests',
+        demandOption: true,
+        type: 'string'
+    })
+    .option('host', {
+        describe: 'local ip of the interface to listen for RPC requests',
+        default: '0.0.0.0',
+        type: 'string'
+    })
+    .option('port', {
+        describe: 'override the port on which the proxy should listen',
+        default: '8545',
+        type: 'string'
+    })
+    .argv
+;
+
 const app = express();
 
 axios.defaults.headers.post['Content-Type'] = 'application/json';
 
 const config = {
   server: {
-    host: '0.0.0.0',
-    port: '8545'
+    host: argv.host,
+    port: argv.port
   },
-  upstream: 'https://parity0.kovan.makerfoundation.com:8545'
+  upstream: argv.upstream
 }
-
 
 app.use((req, res, next) => {
   req.setEncoding('utf8');
