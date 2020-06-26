@@ -8,6 +8,7 @@ const bip39 = require('bip39');
 const {hdkey} = require('ethereumjs-wallet');
 const testchainMnemonic = "hill law jazz limb penalty escape public dish stand bracket blue jar";
 const EthereumTx = require('ethereumjs-tx').Transaction;
+const axios = require('axios');
 
 const seed = bip39.mnemonicToSeedSync(testchainMnemonic); // mnemonic is the string containing the words
 const hdk = hdkey.fromMasterSeed(seed);
@@ -16,6 +17,8 @@ const ethFrom = addr_node.getWallet().getAddressString(); //check that this is t
 const private_key = addr_node.getWallet().getPrivateKey();
 
 const sleep = async function(delay) {await new Promise((r) => setTimeout(r, delay));};
+
+axios.defaults.headers.post['Content-Type'] = 'application/json';
 
 function genTx(nonce,gasPrice) {
   const tx = new EthereumTx({
@@ -76,6 +79,7 @@ test('dropped tx', async () => {
         expect(hash).toContain('0x');
         resolve(hash);
       })
+      .once('receipt', ()=>{});
   });
 
   await sleep(2000);
@@ -100,6 +104,7 @@ test('when a TX is delayed or dropped, subsequent TXs are not sent', async () =>
         expect(hash).toContain('0x');
         resolve(hash);
       })
+      .once('receipt', ()=>{});
   });
 
   const hash2 = await new Promise((resolve)=> {
@@ -108,6 +113,7 @@ test('when a TX is delayed or dropped, subsequent TXs are not sent', async () =>
         expect(hash).toContain('0x');
         resolve(hash);
       })
+      .once('receipt', ()=>{});
   });
 
   await sleep(2000);
@@ -136,6 +142,7 @@ test('when a TX is delayed, subsequent TXs are not queued and sent once the nonc
         expect(hash).toContain('0x');
         resolve(hash);
       })
+      .once('receipt', ()=>{});
   });
 
   const hash2 = await new Promise((resolve)=> {
@@ -144,6 +151,7 @@ test('when a TX is delayed, subsequent TXs are not queued and sent once the nonc
         expect(hash).toContain('0x');
         resolve(hash);
       })
+      .once('receipt', ()=>{});
   });
 
   await sleep(2000);
@@ -153,9 +161,10 @@ test('when a TX is delayed, subsequent TXs are not queued and sent once the nonc
         expect(hash).toContain('0x');
         resolve(hash);
       })
+      .once('receipt', ()=>{});
   });
 
-  await sleep(2000);
+  await sleep(3000);
 
   console.log('check tx receipts');
   const receipt3 = await web3.eth.getTransactionReceipt(hash3);
@@ -166,3 +175,70 @@ test('when a TX is delayed, subsequent TXs are not queued and sent once the nonc
   await server.stop();
 },20000);
 
+test('normal getTransactionCount', async () => {
+  const server = new RpcServer({upstream:'http://localhost:2000', host:'0.0.0.0', port:'8554',minGas:2});
+  server.start();
+  await sleep(1000);
+  const web3 = new Web3('http://localhost:8554');
+
+  const nonce = await web3.eth.getTransactionCount(ethFrom);
+
+  expect(nonce).toBeGreaterThan(0);
+  await server.stop();
+},20000);
+
+test('getTransactionCount with pending transactions', async () => {
+  const server = new RpcServer({upstream:'http://localhost:2000', host:'0.0.0.0', port:'8554',minGas:2});
+  server.start();
+  await sleep(1000);
+  const web3 = new Web3('http://localhost:8554');
+
+  const nonce = await web3.eth.getTransactionCount(ethFrom);
+  const serializedTx1 = genTx(nonce,1E9);
+
+  await new Promise((resolve)=> {
+    web3.eth.sendSignedTransaction(serializedTx1)
+      .once('transactionHash', async hash => {
+        expect(hash).toContain('0x');
+        resolve(hash);
+      })
+      .once('receipt', ()=>{});
+  });
+
+  const newNonce = await web3.eth.getTransactionCount(ethFrom,'pending');
+
+  expect(newNonce).toBe(nonce+1);
+  await server.stop();
+},20000);
+
+test('parity_nextNonce with pending transactions', async () => {
+  const server = new RpcServer({upstream:'http://localhost:2000', host:'0.0.0.0', port:'8554',minGas:2});
+  server.start();
+  await sleep(1000);
+  const web3 = new Web3('http://localhost:8554');
+
+  const nonce = await web3.eth.getTransactionCount(ethFrom);
+  const serializedTx1 = genTx(nonce,1E9);
+
+  await new Promise((resolve)=> {
+    web3.eth.sendSignedTransaction(serializedTx1)
+      .once('transactionHash', async hash => {
+        expect(hash).toContain('0x');
+        resolve(hash);
+      })
+      .once('receipt', ()=>{});
+  });
+
+  //const newNonce = await web3.eth.getTransactionCount(ethFrom,'pending');
+  const res = await axios.post('http://localhost:8554', JSON.stringify({
+    jsonrpc: '2.0',
+    method: 'parity_nextNonce',
+    params: [ethFrom],
+    id: 1
+  })).catch(e => {
+    console.log(e);
+  });
+
+  expect(res.data.result).toBe(nonce+1);
+  await server.stop();
+},20000);
