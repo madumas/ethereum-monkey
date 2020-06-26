@@ -95,7 +95,7 @@ RpcServer.prototype.start= function() {
   server = http.createServer(app).listen(config.port, config.host);
   console.log("Waiting for connections on " + config.host + ":" + config.port);
 
-  app.post('/', function (request, response,) {
+  app.post('/*', function (request, response,) {
     let rpc;
 
     try {
@@ -137,6 +137,42 @@ RpcServer.prototype.start= function() {
           }));
           return;
         }
+      }
+
+      if (rpc.method === 'parity_pendingTransactions') {
+        const from=rpc.params[0].toLowerCase();
+        const pendingTxs = skippedTx[from].filter(rawTx=>rawTx!==null).map( (rawTx,nonce) => {
+          if (rawTx) {
+            const decodedData = ethers.utils.parseTransaction(rawTx);
+            return {
+              "blockHash": null,
+              "blockNumber": null,
+              "creates": null,
+              "from": decodedData.from,
+              "gas": decodedData.gasLimit.toHexString(),
+              "gasPrice": decodedData.gasPrice.toHexString(),
+              "hash": decodedData.hash,
+              "input": decodedData.data,
+              "chainId": decodedData.chainId,
+              "nonce": decodedData.nonce,
+              "publicKey": null,
+              "r": decodedData.r,
+              "raw": rawTx,
+              "s": decodedData.s,
+              "standardV": "0x1",
+              "to": decodedData.to,
+              "transactionIndex": null,
+              "v": decodedData.v,
+              "value": decodedData.value
+            }
+          }
+        });
+        response.status(200).send(JSON.stringify({
+          jsonrpc: '2.0',
+          result: JSON.stringify(pendingTxs),
+          id: rpc.id
+        }));
+        return;
       }
 
       axios.post(config.upstream, request.rpc).then((res) => {

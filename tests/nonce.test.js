@@ -122,6 +122,21 @@ test('when a TX is delayed or dropped, subsequent TXs are not sent', async () =>
   const receipt2 = await web3.eth.getTransactionReceipt(hash2);
   expect(receipt1).toBeNull();
   expect(receipt2).toBeNull();
+
+
+  //check the pending transaction list (parity)
+  const res = await axios.post('http://localhost:8554/rpc', JSON.stringify({
+    jsonrpc: '2.0',
+    method: 'parity_pendingTransactions',
+    params: [ethFrom],
+    id: 1
+  })).catch(e => {
+    console.log(e);
+  });
+
+  const resj = JSON.parse(res.data.result);
+  expect(resj[0].from.toLowerCase()).toEqual(ethFrom.toLowerCase());
+  expect(resj.length).toEqual(2);
   await server.stop();
 },20000);
 
