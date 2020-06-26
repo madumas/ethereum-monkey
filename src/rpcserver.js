@@ -132,7 +132,7 @@ RpcServer.prototype.start= function() {
         if (localNonce!==-1) {
           response.status(200).send(JSON.stringify({
             jsonrpc: '2.0',
-            result: localNonce+1,
+            result: Number(localNonce+1).toString(16),
             id: rpc.id
           }));
           return;
