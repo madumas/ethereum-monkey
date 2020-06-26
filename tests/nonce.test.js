@@ -229,7 +229,6 @@ test('parity_nextNonce with pending transactions', async () => {
       .once('receipt', ()=>{});
   });
 
-  //const newNonce = await web3.eth.getTransactionCount(ethFrom,'pending');
   const res = await axios.post('http://localhost:8554', JSON.stringify({
     jsonrpc: '2.0',
     method: 'parity_nextNonce',

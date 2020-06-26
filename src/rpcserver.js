@@ -36,7 +36,7 @@ async function sendTransaction(request,response,signedTx) {
     await axios.post(config.upstream, JSON.stringify({
       jsonrpc: '2.0',
       method: 'eth_sendRawTransaction',
-      params: signedTx,
+      params: [signedTx],
       id: 1
     })).catch(e => {
       console.log(e);
@@ -126,7 +126,7 @@ RpcServer.prototype.start= function() {
         return;
       }
 
-      if ((rpc.method === 'eth_getTransactionCount' && rpc.params[1]==='pending')
+      if ((rpc.method === 'eth_getTransactionCount')
         || rpc.method === 'parity_nextNonce') {
         const localNonce=biggestSkippedNonce(rpc.params[0]);
         if (localNonce!==-1) {
