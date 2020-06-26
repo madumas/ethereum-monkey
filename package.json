@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "start": "node src/index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest ./tests",
+    "pretest": "node src/index.js --upstream http://localhost:2000"
   },
   "keywords": [],
   "author": "",
@@ -16,6 +17,13 @@
     "express": "^4.17.1",
     "express-basic-auth": "^1.2.0",
     "web3": "^1.2.9",
-    "yargs": "^15.3.1"
+    "yargs": "^15.3.1",
+    "http-terminator": "^2.0.3"
+  },
+  "devDependencies": {
+    "jest": "^26.1.0"
+  },
+  "jest": {
+    "verbose": true
   }
 }
