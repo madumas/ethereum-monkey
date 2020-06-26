@@ -21,6 +21,7 @@ const biggestSkippedNonce = function(addr) {
 
 function RpcServer(conf) {
   config = conf;
+  skippedTx={};
 }
 
 async function sendTransaction(request,response,signedTx) {
@@ -44,6 +45,7 @@ async function sendTransaction(request,response,signedTx) {
 }
 
 function processSendTransaction(rawTx,request,response,rpc) {
+
   const decodedData = ethers.utils.parseTransaction(rawTx);
   const txHash = web3.utils.keccak256(rawTx);
   if (Math.random() < config.txErrorRate
@@ -53,7 +55,7 @@ function processSendTransaction(rawTx,request,response,rpc) {
     console.log('Queued transaction with Nonce ' + decodedData.nonce);
     skippedTx[decodedData.from]=skippedTx[decodedData.from]||[];
     skippedTx[decodedData.from][decodedData.nonce]=rawTx;
-    response.status(200).send(JSON.stringify({
+    if (response) response.status(200).send(JSON.stringify({
       jsonrpc: '2.0',
       result: txHash,
       id: rpc.id
@@ -119,9 +121,7 @@ RpcServer.prototype.start= function() {
       }
 
       if (rpc.method === 'eth_sendRawTransaction') {
-
         processSendTransaction(rpc.params[0],request,response,rpc);
-
       } else {
         axios.post(config.upstream, request.rpc).then((res) => {
           let responseData = res.data;
