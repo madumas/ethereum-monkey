@@ -1,6 +1,7 @@
 const RpcServer = require("./rpcserver");
 
 let argv = require('yargs')
+    .env('MONKEY')
     .option('upstream', {
         alias: 'u',
         describe: 'HTTP URI for Ethereum node to which this service should proxy requests',
